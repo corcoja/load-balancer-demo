@@ -59,7 +59,12 @@ class Utils {
     }
 
     static List<String> getDummyProviderNames(Integer count) {
-        return IntStream.range(0, count).mapToObj(idx -> MessageFormat.format("provider{0}", idx))
+        return getDummyProviderNames(count, 0);
+    }
+
+    static List<String> getDummyProviderNames(Integer count, Integer offset) {
+        return IntStream.range(offset, offset + count)
+                .mapToObj(idx -> MessageFormat.format("provider{0}", idx))
                 .collect(Collectors.toList());
     }
 
