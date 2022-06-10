@@ -164,8 +164,8 @@ public class BaseLoadBalancerTests {
                 .until(() -> loadBalancer.getAliveProviders().size() == providers.size()));
         // @formatter:on
 
-        System.out.println(
-                "Check that requests to load balancer will be forwarded to all providers");
+        System.out
+                .println("Check that requests to load balancer will be forwarded to all providers");
 
         responses.clear();
 
@@ -281,7 +281,7 @@ public class BaseLoadBalancerTests {
         }
 
         for (String providerName : providerNames) {
-            assertEquals(responses.getOrDefault(providerName, 0), 1);
+            assertEquals(1, responses.getOrDefault(providerName, 0));
         }
 
         System.out.println(MessageFormat.format("Remove last {0} providers", providersToRemove));
