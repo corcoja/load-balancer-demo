@@ -12,7 +12,7 @@ public class RandomLoadBalancer extends BaseLoadBalancer {
 
     private Random random = new Random();
 
-    protected RandomLoadBalancer(Long checkAliveInterval, Long aliveTimeout) {
+    public RandomLoadBalancer(Long checkAliveInterval, Long aliveTimeout) {
         super(checkAliveInterval, aliveTimeout);
     }
 
