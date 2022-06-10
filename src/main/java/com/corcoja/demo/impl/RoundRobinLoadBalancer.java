@@ -1,6 +1,7 @@
 package com.corcoja.demo.impl;
 
 import java.util.List;
+import java.util.function.IntPredicate;
 import com.corcoja.demo.error.MaxLoadException;
 import com.corcoja.demo.error.ProviderNotFoundException;
 import com.corcoja.demo.protocol.Provider;
@@ -21,11 +22,18 @@ public class RoundRobinLoadBalancer extends BaseLoadBalancer {
             throw new ProviderNotFoundException("Load Balancer has no registered providers!");
         }
 
-        // Next provider
+        // Get next provider in Round Robin sequence
         Integer count = providers.size();
         Integer iterationIdx = lastIdx + 1;
 
-        while (alivePings.get(providers.get(iterationIdx % count)) < 0) {
+        // Helper function to identify if the provider at a certain iteration is alive
+        IntPredicate isProviderAtIterationAlive = i -> {
+            Provider provider = providers.get(i % count);
+            return alivePings.get(provider) >= 0 && provider.getCurrentLoad() < 1.0;
+        };
+
+        // Loop through providers until we find one that is available and not overloaded
+        while (!isProviderAtIterationAlive.test(iterationIdx)) {
 
             // If we have made an entire loop around all providers and none of them are alive, throw
             // an exception

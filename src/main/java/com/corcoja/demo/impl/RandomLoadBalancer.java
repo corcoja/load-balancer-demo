@@ -24,14 +24,17 @@ public class RandomLoadBalancer extends BaseLoadBalancer {
             throw new ProviderNotFoundException("Load Balancer has no registered providers!");
         }
 
-        // Get all alive providers
-        List<Provider> aliveProviders =
-                alivePings.entrySet().stream().filter(entry -> entry.getValue() >= 0)
-                        .map(Map.Entry::getKey).collect(Collectors.toList());
+        // Filter out dead/unresponsive providers or the providers that are overloaded
+        // @formatter:off
+        List<Provider> aliveProviders = alivePings.entrySet().stream()
+                .filter(entry -> entry.getValue() >= 0 && entry.getKey().getCurrentLoad() < 1.0)
+                .map(Map.Entry::getKey)
+                .collect(Collectors.toList());
+        // @formatter:on
 
         // Check if there are alive provides
         if (aliveProviders.isEmpty()) {
-            throw new MaxLoadException("All providers are down!");
+            throw new MaxLoadException("All providers are down or overloaded!");
         }
 
         return aliveProviders.get(random.nextInt(aliveProviders.size())).get();
