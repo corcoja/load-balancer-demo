@@ -6,16 +6,13 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
@@ -27,13 +24,18 @@ import com.corcoja.demo.protocol.Provider;
 
 public abstract class BaseLoadBalancer implements LoadBalancer {
 
+    /**
+     * A provider is considered alive once the amount of successful pings equals to {@code 0} or
+     * more. Setting the amount of pings to {@code -2} after one unsuccessful ping would mean that
+     * it needs at least two successful subsequent pings in order to become alive again.
+     * 
+     * @apiNote Each successful ping will increment the amount of pings by {@code 1}.
+     */
     private static final Integer PROVIDER_UNAVAILABLE_RESET_PINGS = -2;
 
     private static Logger logger = LogManager.getLogger(BaseLoadBalancer.class);
 
     private final Executor aliveCheckExecutor;
-
-    private final Executor timeoutExecutor;
 
     private final Timer providerAliveTimer;
 
@@ -63,9 +65,8 @@ public abstract class BaseLoadBalancer implements LoadBalancer {
 
         this.aliveTimeout = aliveTimeout;
 
-        // Create the thread pools for alive provider checks
+        // Create the thread pool for alive provider checks
         aliveCheckExecutor = Executors.newCachedThreadPool();
-        timeoutExecutor = Executors.newCachedThreadPool();
 
         // Create a timer that will check from time to time if the providers are alive
         TimerTask timerTask = new TimerTask() {
@@ -116,34 +117,33 @@ public abstract class BaseLoadBalancer implements LoadBalancer {
     private void timerFired() {
 
         // Check if the provider is alive in a dedicated thread (one thread per provider)
-        for (Entry<Provider, Integer> entry : alivePings.entrySet()) {
+        for (Provider provider : alivePings.keySet()) {
 
-            aliveCheckExecutor.execute(() -> {
-                Boolean result = false;
+            // @formatter:off
+            CompletableFuture.supplyAsync(provider::check, aliveCheckExecutor)
+                    .orTimeout(aliveTimeout, TimeUnit.MILLISECONDS)
+                    .whenCompleteAsync((result, e) -> updateAlivePings(provider, result, e));
+            // @formatter:on
+        }
+    }
 
-                try {
-                    result = CompletableFuture.supplyAsync(entry.getKey()::check, timeoutExecutor)
-                            .get(aliveTimeout, TimeUnit.MILLISECONDS);
-                    logger.debug("Provider {} still alive!", entry.getKey());
-                } catch (InterruptedException e) {
-                    logger.error("Timer {} thread interrupted!", providerAliveTimer);
-                    Thread.currentThread().interrupt();
-                } catch (ExecutionException | TimeoutException e) {
-                    logger.error("Provider {} not responding! Marking it as not alive!",
-                            entry.getKey());
-                } finally {
+    private void updateAlivePings(Provider provider, Boolean result, Throwable exception) {
 
-                    if (Boolean.TRUE.equals(result)) {
+        if (exception != null || !result) {
 
-                        // Increment the count of subsequent successful pings
-                        alivePings.put(entry.getKey(), entry.getValue() + 1);
-                    } else {
+            // Reset the number of pings
+            alivePings.put(provider, PROVIDER_UNAVAILABLE_RESET_PINGS);
 
-                        // Reset the number of pings
-                        alivePings.put(entry.getKey(), PROVIDER_UNAVAILABLE_RESET_PINGS);
-                    }
-                }
-            });
+            String errorMessage = exception != null ? exception.getClass().getSimpleName() : "null";
+            logger.error("Provider {} not responding! Marking it as not alive! Exception: {}",
+                    provider, errorMessage);
+        } else {
+
+            // Increment the count of subsequent successful pings
+            Integer currentPingCount = alivePings.get(provider);
+            alivePings.put(provider, currentPingCount + 1);
+
+            logger.debug("Provider {} still alive!", provider);
         }
     }
 }
