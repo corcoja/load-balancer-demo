@@ -2,6 +2,7 @@ package com.corcoja.demo;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import java.text.MessageFormat;
 import java.util.HashMap;
 import java.util.List;
@@ -10,13 +11,14 @@ import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import com.corcoja.demo.error.MaxLoadException;
 import com.corcoja.demo.protocol.LoadBalancer;
 import com.corcoja.demo.protocol.Provider;
 
 public class RandomLoadBalancerTests {
 
     @Test
-    public void testRoundRobinOneProvider() {
+    public void testRandomOneProvider() {
         String customUuid = Constants.dummyProviderName;
         Provider provider = Utils.createSimpleProvider(customUuid);
 
@@ -33,8 +35,8 @@ public class RandomLoadBalancerTests {
     }
 
     @ParameterizedTest
-    @CsvSource({"10,10", "5, 25", "1,10", "1,1", "1,0", "10,100", "7, 63"})
-    public void testRoundRobinMultipleProviders(Integer providerCount, Integer requests) {
+    @CsvSource({"10,10", "5,25", "1,10", "1,1", "1,0", "10,100", "7,63"})
+    public void testRandomMultipleProviders(Integer providerCount, Integer requests) {
         List<String> providerNames = Utils.getDummyProviderNames(providerCount);
         LoadBalancer loadBalancer = Utils.createRandomLoadBalancer();
 
@@ -62,5 +64,26 @@ public class RandomLoadBalancerTests {
         // @formatter:on
 
         System.out.println(MessageFormat.format("Request distribution: [{0}]", distribution));
+    }
+
+    @ParameterizedTest
+    @CsvSource({"1,11", "2,25", "5,99", "10,999"})
+    public void testRandomMultipleProvidersOverloaded(Integer providerCount, Integer requests) {
+        List<String> providerNames = Utils.getDummyProviderNames(providerCount);
+        LoadBalancer loadBalancer = Utils.createRandomLoadBalancer();
+
+        // Create providers and register them on the load balancer
+        List<Provider> providers = providerNames.stream().map(Utils::createSimpleProvider)
+                .collect(Collectors.toList());
+        loadBalancer.registerProviders(providers);
+
+        System.out.println("Check that load balancer will throw an exception once maximum "
+                + "capacity is reached on all providers");
+
+        assertThrows(MaxLoadException.class, () -> {
+            for (int i = 0; i < requests; i++) {
+                loadBalancer.get();
+            }
+        });
     }
 }

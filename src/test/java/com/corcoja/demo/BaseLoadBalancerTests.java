@@ -93,7 +93,8 @@ public class BaseLoadBalancerTests {
         AliveProvidersLoadBalancer loadBalancer = Utils.createAliveProvidersLoadBalancer();
 
         // Create providers and register them on the load balancer
-        List<Provider> providers = providerNames.stream().map(Utils::createCheckCountProvider)
+        List<Provider> providers = providerNames.stream()
+                .map((name) -> Utils.createCheckCountProvider(name, requestsPerProvider * 2))
                 .collect(Collectors.toList());
         loadBalancer.registerProviders(providers);
 
@@ -190,7 +191,8 @@ public class BaseLoadBalancerTests {
         AliveProvidersLoadBalancer loadBalancer = Utils.createAliveProvidersLoadBalancer();
 
         // Create providers and register them on the load balancer
-        List<Provider> providers = providerNames.stream().map(Utils::createCheckCountProvider)
+        List<Provider> providers = providerNames.stream()
+                .map((name) -> Utils.createCheckCountProvider(name, requestsPerProvider))
                 .collect(Collectors.toList());
         loadBalancer.registerProviders(providers);
 
@@ -252,7 +254,8 @@ public class BaseLoadBalancerTests {
         AliveProvidersLoadBalancer loadBalancer = Utils.createAliveProvidersLoadBalancer();
 
         // Create providers and register them on the load balancer
-        List<Provider> providers = providerNames.stream().map(Utils::createCheckCountProvider)
+        List<Provider> providers = providerNames.stream()
+                .map((name) -> Utils.createCheckCountProvider(name, requestsPerProvider + 1))
                 .collect(Collectors.toList());
         loadBalancer.registerProviders(providers);
 

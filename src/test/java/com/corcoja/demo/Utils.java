@@ -80,7 +80,11 @@ class Utils {
     }
 
     static Provider createCheckCountProvider(String customUuid) {
-        return new CheckCountProvider(customUuid, Constants.providerMaxConcurrentRequests,
+        return createCheckCountProvider(customUuid, Constants.providerMaxConcurrentRequests);
+    }
+
+    static Provider createCheckCountProvider(String customUuid, Integer maxConcurrentRequests) {
+        return new CheckCountProvider(customUuid, maxConcurrentRequests,
                 Constants.providerRequestProcessingTime);
     }
 
