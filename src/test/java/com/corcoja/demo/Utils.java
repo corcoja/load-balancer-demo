@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import com.corcoja.demo.impl.RandomLoadBalancer;
 import com.corcoja.demo.impl.RoundRobinLoadBalancer;
 import com.corcoja.demo.impl.SimpleProvider;
 import com.corcoja.demo.protocol.LoadBalancer;
@@ -81,6 +82,11 @@ class Utils {
     static Provider createCheckCountProvider(String customUuid) {
         return new CheckCountProvider(customUuid, Constants.providerMaxConcurrentRequests,
                 Constants.providerRequestProcessingTime);
+    }
+
+    static LoadBalancer createRandomLoadBalancer() {
+        return new RandomLoadBalancer(Constants.loadBalancerAliveInterval.toMillis(),
+                Constants.loadBalancerAliveTimeout.toMillis());
     }
 
     static LoadBalancer createRoundRobinLoadBalancer() {
