@@ -1,8 +1,8 @@
 package com.corcoja.demo.impl;
 
-import java.nio.file.ProviderNotFoundException;
 import java.util.List;
 import com.corcoja.demo.error.MaxLoadException;
+import com.corcoja.demo.error.ProviderNotFoundException;
 import com.corcoja.demo.protocol.Provider;
 
 public class RoundRobinLoadBalancer extends BaseLoadBalancer {
@@ -46,7 +46,7 @@ public class RoundRobinLoadBalancer extends BaseLoadBalancer {
     public void registerProviders(List<Provider> providers) {
         super.registerProviders(providers);
 
-        // Reset the index to start over the iteration over providers
+        // Reset the index to start over the iteration on providers
         lastIdx = -1;
     }
 }
