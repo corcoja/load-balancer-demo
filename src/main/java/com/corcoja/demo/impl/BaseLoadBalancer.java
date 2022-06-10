@@ -85,9 +85,9 @@ public abstract class BaseLoadBalancer implements LoadBalancer {
     public void registerProviders(List<Provider> providers) {
 
         // Replace existing providers
-        this.providers = Collections.synchronizedList(providers);
-        this.alivePings = Collections.synchronizedMap(
-                providers.stream().collect(Collectors.toMap(Function.identity(), provider -> 0)));
+        this.providers = Collections.synchronizedList(new ArrayList<>(providers));
+        this.alivePings = Collections.synchronizedMap(new HashMap<>(
+                providers.stream().collect(Collectors.toMap(Function.identity(), provider -> 0))));
     }
 
     public void addProvider(Provider provider) throws ProviderAlreadyRegisteredException {
